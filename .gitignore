@@ -1,0 +1,25 @@
+# env
+.env
+
+# data (apenas raw; processed pode entrar se for pequeno)
+data/raw/*.json
+data/raw/*.parquet
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+.ruff_cache/
+.mypy_cache/
+
+# jupyter
+.ipynb_checkpoints/
+
+# mlflow / experimentos
+mlruns/
+mlflow.db
+
+# outros
+.DS_Store
