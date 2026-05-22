@@ -48,6 +48,9 @@ def parse_fixtures(fixtures: list[dict]) -> pd.DataFrame:
             }
         )
 
+    if not rows:
+        return pd.DataFrame()
+
     df = pd.DataFrame(rows)
     df["date"] = pd.to_datetime(df["date"], utc=True)
     df = df.sort_values("date").reset_index(drop=True)
