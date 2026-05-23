@@ -6,13 +6,17 @@ import os
 
 import dagshub
 import mlflow
+import mlflow.sklearn
 import pandas as pd
 from dotenv import load_dotenv
 from prefect import flow, task
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 from chute_certo.features.build import WINDOW, build_features
 from chute_certo.ingestion.processing import load_seasons
-from chute_certo.training.train import FEATURE_COLS, evaluate, summarize
+from chute_certo.training.train import FEATURE_COLS, TARGET, evaluate, summarize
 
 load_dotenv()
 dagshub.init(
@@ -22,7 +26,7 @@ dagshub.init(
 )
 
 EXPERIMENT_NAME = "brasileirao-prediction"
-SEASONS = [2022, 2023, 2024]
+SEASONS = [2023, 2024, 2025, 2026]
 MIN_TRAIN_ROUNDS = 10
 CV_STRATEGY = "walk_forward_by_round"
 
@@ -78,6 +82,39 @@ def task_train_and_log(features: pd.DataFrame, cv_tag: str) -> pd.DataFrame:
     return results
 
 
+@task(name="register-final-model")
+def task_register_final_model(features: pd.DataFrame) -> None:
+    df = features.dropna(subset=FEATURE_COLS).reset_index(drop=True)
+    X = df[FEATURE_COLS].to_numpy()
+    y = df[TARGET].to_numpy()
+
+    model = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("clf", LogisticRegression(max_iter=1000, random_state=42)),
+        ]
+    )
+    model.fit(X, y)
+
+    mlflow.set_experiment(EXPERIMENT_NAME)
+    with mlflow.start_run(run_name="logistic_regression_final"):
+        mlflow.set_tag("model_type", "final")
+        mlflow.log_params(
+            {
+                "model": "logistic_regression",
+                "seasons": str(SEASONS),
+                "feature_window": WINDOW,
+                "features": str(FEATURE_COLS),
+                "n_samples": len(X),
+            }
+        )
+        mlflow.sklearn.log_model(
+            model,
+            artifact_path="model",
+            registered_model_name="brasileirao-predictor",
+        )
+
+
 @flow(name="brasileirao-training-pipeline", log_prints=True)
 def training_pipeline(
     seasons: list[int] = SEASONS,
@@ -88,6 +125,7 @@ def training_pipeline(
     df = task_load_data(seasons)
     features = task_build_features(df, window)
     task_train_and_log(features, cv_tag)
+    task_register_final_model(features)
 
 
 if __name__ == "__main__":

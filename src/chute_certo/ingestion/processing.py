@@ -6,8 +6,7 @@ from loguru import logger
 from chute_certo.ingestion.api_football import RAW_DATA_DIR
 
 
-def _parse_round(round_str: str) -> int:
-    # "Regular Season - 7" → 7
+def parse_round(round_str: str) -> int:
     return int(round_str.split(" - ")[-1])
 
 
@@ -33,7 +32,7 @@ def parse_fixtures(fixtures: list[dict]) -> pd.DataFrame:
                 "fixture_id": f["fixture"]["id"],
                 "date": f["fixture"]["date"],
                 "season": f["league"]["season"],
-                "round": _parse_round(f["league"]["round"]),
+                "round": parse_round(f["league"]["round"]),
                 "home_team_id": f["teams"]["home"]["id"],
                 "home_team": f["teams"]["home"]["name"],
                 "away_team_id": f["teams"]["away"]["id"],

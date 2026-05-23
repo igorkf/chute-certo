@@ -47,6 +47,28 @@ def _rolling_team_stats(team_df: pd.DataFrame, window: int) -> pd.DataFrame:
     return team_df[keep]
 
 
+def compute_current_form(
+    df: pd.DataFrame, team_ids: list[int], window: int = WINDOW
+) -> pd.DataFrame:
+    """Current rolling form for each team_id, including their last played match.
+
+    Unlike build_features, no .shift(1) — we want stats that include the most
+    recent finished match, since we're predicting the *next* unplayed match.
+    Returns a DataFrame indexed by team_id.
+    """
+    team_df = _team_perspective(df).sort_values(["team_id", "date"])
+    cols = ["scored", "conceded", "points"]
+    rolled = team_df.groupby("team_id")[cols].transform(
+        lambda s: s.rolling(window, min_periods=1).mean()
+    )
+    team_df = team_df.copy()
+    team_df[["form_scored", "form_conceded", "form_points"]] = rolled
+    latest = team_df.groupby("team_id").last().reset_index()
+    return latest[latest["team_id"].isin(team_ids)][
+        ["team_id", "form_points", "form_scored", "form_conceded"]
+    ].set_index("team_id")
+
+
 def build_features(df: pd.DataFrame, window: int = WINDOW) -> pd.DataFrame:
     """
     Add rolling form features for home and away teams.
