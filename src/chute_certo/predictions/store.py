@@ -76,6 +76,15 @@ def load_predictions() -> list[dict]:
     return [dict(zip(rs.columns, row, strict=True)) for row in rs.rows]
 
 
+def load_pending_predictions() -> list[dict]:
+    with _client() as client:
+        client.execute(_CREATE_TABLE)
+        rs = client.execute(
+            "SELECT * FROM predictions WHERE actual_result IS NULL ORDER BY match_date"
+        )
+    return [dict(zip(rs.columns, row, strict=True)) for row in rs.rows]
+
+
 def has_predictions_for_round(season: int, round_n: int) -> bool:
     with _client() as client:
         client.execute(_CREATE_TABLE)
@@ -95,4 +104,17 @@ def update_actual_result(fixture_id: int, actual_result: str) -> None:
                 "UPDATE predictions SET actual_result = ? WHERE fixture_id = ?",
                 [actual_result, fixture_id],
             )
+        )
+
+
+def batch_update_actual_results(updates: list[tuple[int, str]]) -> None:
+    with _client() as client:
+        client.batch(
+            [
+                libsql_client.Statement(
+                    "UPDATE predictions SET actual_result = ? WHERE fixture_id = ?",
+                    [actual, fid],
+                )
+                for fid, actual in updates
+            ]
         )

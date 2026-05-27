@@ -9,7 +9,6 @@ dependencies = [
     "loguru>=0.7.0",
     "mlflow>=3.12.0",
     "pandas>=2.0.0",
-    "prefect>=3.7.1",
     "pydantic-settings>=2.0.0",
     "requests>=2.31.0",
     "scikit-learn>=1.8.0",

@@ -18,7 +18,7 @@ FEATURE_COLS = [
 TARGET = "result"
 
 
-def _make_models() -> dict:
+def make_models() -> dict:
     return {
         "baseline_majority": DummyClassifier(strategy="most_frequent"),
         "baseline_stratified": DummyClassifier(strategy="stratified", random_state=42),
@@ -48,7 +48,7 @@ def evaluate(df: pd.DataFrame, min_train_rounds: int = 10) -> pd.DataFrame:
         fold_season = val["season"].iloc[0]
         fold_round = val["round"].iloc[0]
 
-        for name, model in _make_models().items():
+        for name, model in make_models().items():
             model.fit(X_train, y_train)
             y_pred = model.predict(X_val)
             y_proba = model.predict_proba(X_val)

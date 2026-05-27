@@ -1,4 +1,4 @@
-"""Prefect pipeline: ingest → features → train → log to MLflow."""
+"""Pipeline: ingest → features → train → log to MLflow."""
 
 import hashlib
 import json
@@ -9,14 +9,16 @@ import mlflow
 import mlflow.sklearn
 import pandas as pd
 from dotenv import load_dotenv
-from prefect import flow, task
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 
 from chute_certo.features.build import WINDOW, build_features
 from chute_certo.ingestion.processing import load_seasons
-from chute_certo.training.train import FEATURE_COLS, TARGET, evaluate, summarize
+from chute_certo.training.train import (
+    FEATURE_COLS,
+    TARGET,
+    evaluate,
+    make_models,
+    summarize,
+)
 
 load_dotenv()
 dagshub.init(
@@ -40,18 +42,15 @@ def _cv_tag(strategy: str, min_train_rounds: int, seasons: list[int]) -> str:
     return hashlib.md5(json.dumps(config, sort_keys=True).encode()).hexdigest()[:8]
 
 
-@task(name="load-data")
-def task_load_data(seasons: list[int]) -> pd.DataFrame:
+def load_data(seasons: list[int]) -> pd.DataFrame:
     return load_seasons(seasons)
 
 
-@task(name="build-features")
-def task_build_features(df: pd.DataFrame, window: int) -> pd.DataFrame:
+def build_feature_set(df: pd.DataFrame, window: int) -> pd.DataFrame:
     return build_features(df, window=window)
 
 
-@task(name="train-and-log", retries=2)
-def task_train_and_log(features: pd.DataFrame, cv_tag: str) -> pd.DataFrame:
+def train_and_log(features: pd.DataFrame, cv_tag: str) -> pd.DataFrame:
     mlflow.set_experiment(EXPERIMENT_NAME)
     results = evaluate(features, min_train_rounds=MIN_TRAIN_ROUNDS)
     summary = summarize(results)
@@ -82,18 +81,12 @@ def task_train_and_log(features: pd.DataFrame, cv_tag: str) -> pd.DataFrame:
     return results
 
 
-@task(name="register-final-model")
-def task_register_final_model(features: pd.DataFrame) -> None:
+def register_final_model(features: pd.DataFrame) -> None:
     df = features.dropna(subset=FEATURE_COLS).reset_index(drop=True)
     X = df[FEATURE_COLS].to_numpy()
     y = df[TARGET].to_numpy()
 
-    model = Pipeline(
-        [
-            ("scaler", StandardScaler()),
-            ("clf", LogisticRegression(max_iter=1000, random_state=42)),
-        ]
-    )
+    model = make_models()["logistic_regression"]
     model.fit(X, y)
 
     mlflow.set_experiment(EXPERIMENT_NAME)
@@ -115,17 +108,16 @@ def task_register_final_model(features: pd.DataFrame) -> None:
         )
 
 
-@flow(name="brasileirao-training-pipeline", log_prints=True)
 def training_pipeline(
     seasons: list[int] = SEASONS,
     window: int = WINDOW,
-):
+) -> None:
     cv_tag = _cv_tag(CV_STRATEGY, MIN_TRAIN_ROUNDS, seasons)
 
-    df = task_load_data(seasons)
-    features = task_build_features(df, window)
-    task_train_and_log(features, cv_tag)
-    task_register_final_model(features)
+    df = load_data(seasons)
+    features = build_feature_set(df, window)
+    train_and_log(features, cv_tag)
+    register_final_model(features)
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from chute_certo.predictions.store import load_predictions
+from chute_certo.training.train import FEATURE_COLS
 
 
 class PredictRequest(BaseModel):
@@ -53,18 +54,7 @@ def get_predictions():
 @app.post("/predict", response_model=PredictResponse)
 def predict(req: PredictRequest):
     model = _state["model"]
-    X = np.array(
-        [
-            [
-                req.home_form_points,
-                req.home_form_scored,
-                req.home_form_conceded,
-                req.away_form_points,
-                req.away_form_scored,
-                req.away_form_conceded,
-            ]
-        ]
-    )
+    X = np.array([[getattr(req, col) for col in FEATURE_COLS]])
     proba = model.predict_proba(X)[0]
     proba_map = dict(zip(model.classes_, proba, strict=True))
     return PredictResponse(

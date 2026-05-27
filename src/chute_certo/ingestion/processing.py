@@ -10,7 +10,7 @@ def parse_round(round_str: str) -> int:
     return int(round_str.split(" - ")[-1])
 
 
-def _result(home_goals: int, away_goals: int) -> str:
+def result(home_goals: int, away_goals: int) -> str:
     if home_goals > away_goals:
         return "H"
     if home_goals < away_goals:
@@ -43,7 +43,7 @@ def parse_fixtures(fixtures: list[dict]) -> pd.DataFrame:
                 "ht_away_goals": f["score"]["halftime"]["away"],
                 "venue": f["fixture"]["venue"]["name"],
                 "referee": f["fixture"]["referee"],
-                "result": _result(home_goals, away_goals),
+                "result": result(home_goals, away_goals),
             }
         )
 
