@@ -4,7 +4,6 @@ import hashlib
 import json
 import os
 
-import dagshub
 import mlflow
 import mlflow.sklearn
 import pandas as pd
@@ -21,10 +20,9 @@ from chute_certo.training.train import (
 )
 
 load_dotenv()
-dagshub.init(
-    repo_owner=os.environ["DAGSHUB_REPO_OWNER"],
-    repo_name=os.environ["DAGSHUB_REPO_NAME"],
-    mlflow=True,
+mlflow.set_tracking_uri(
+    f"https://dagshub.com/{os.environ['DAGSHUB_REPO_OWNER']}"
+    f"/{os.environ['DAGSHUB_REPO_NAME']}.mlflow"
 )
 
 EXPERIMENT_NAME = "brasileirao-prediction"

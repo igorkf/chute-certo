@@ -2,16 +2,15 @@
 
 import os
 
-import dagshub
+import mlflow
 import uvicorn
 from dotenv import load_dotenv
 
 load_dotenv()
 
-dagshub.init(
-    repo_owner=os.environ["DAGSHUB_REPO_OWNER"],
-    repo_name=os.environ["DAGSHUB_REPO_NAME"],
-    mlflow=True,
+mlflow.set_tracking_uri(
+    f"https://dagshub.com/{os.environ['DAGSHUB_REPO_OWNER']}"
+    f"/{os.environ['DAGSHUB_REPO_NAME']}.mlflow"
 )
 
 if __name__ == "__main__":

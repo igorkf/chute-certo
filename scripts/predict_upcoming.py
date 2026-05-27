@@ -3,7 +3,6 @@
 import os
 import sys
 
-import dagshub
 import mlflow.sklearn
 import pandas as pd
 from dotenv import load_dotenv
@@ -17,10 +16,9 @@ from chute_certo.predictions.store import has_predictions_for_round, save_predic
 HISTORICAL_SEASONS = [2023, 2024, 2025]
 
 load_dotenv()
-dagshub.init(
-    repo_owner=os.environ["DAGSHUB_REPO_OWNER"],
-    repo_name=os.environ["DAGSHUB_REPO_NAME"],
-    mlflow=True,
+mlflow.set_tracking_uri(
+    f"https://dagshub.com/{os.environ['DAGSHUB_REPO_OWNER']}"
+    f"/{os.environ['DAGSHUB_REPO_NAME']}.mlflow"
 )
 
 
