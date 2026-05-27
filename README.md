@@ -47,6 +47,14 @@ uv run python scripts/download_data.py --seasons 2023 2024 2025 2026
 uv run python scripts/train_model.py
 uv run python scripts/predict_upcoming.py 2026
 uv run python scripts/serve.py  # API em localhost:8000
+
+# Predição pontual
+curl -X POST localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"home_form_points":1.8,"home_form_scored":1.5,"home_form_conceded":1.0,"away_form_points":1.2,"away_form_scored":1.1,"away_form_conceded":1.4}'
+
+# Todas as predições salvas
+curl localhost:8000/predictions
 ```
 
 ## Variáveis de ambiente
