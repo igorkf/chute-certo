@@ -101,7 +101,7 @@ def register_final_model(features: pd.DataFrame) -> None:
         )
         mlflow.sklearn.log_model(
             model,
-            artifact_path="model",
+            name="model",
             registered_model_name="brasileirao-predictor",
         )
 
