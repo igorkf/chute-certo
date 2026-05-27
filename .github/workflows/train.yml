@@ -1,26 +1,22 @@
-name: Prediction Pipeline
+name: Training Pipeline
 
 on:
   schedule:
-    - cron: "0 5 * * *" # Diariamente às 5h UTC (2h Brasília)
+    - cron: "0 5 * * 1" # Semanalmente às 5h UTC (2h Brasília) toda segunda-feira
   workflow_dispatch:
 
 jobs:
-  predict:
+  train:
     runs-on: ubuntu-latest
 
     env:
       # Secrets
       API_KEY_FOOTBALL_DATA: ${{ secrets.API_KEY_FOOTBALL_DATA }}
       MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
-      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-      # Variables
-      TURSO_URL: ${{ vars.TURSO_URL }}
       # Hardcoded (public)
       DAGSHUB_REPO_OWNER: igorkuivjogi
       DAGSHUB_REPO_NAME: chute-certo
       MLFLOW_TRACKING_USERNAME: igorkuivjogi
-      MODEL_URI: models:/brasileirao-predictor/latest
 
     steps:
       - uses: actions/checkout@v4
@@ -35,8 +31,5 @@ jobs:
       - name: Download latest data
         run: uv run python scripts/download_data.py --seasons 2023 2024 2025 2026
 
-      - name: Evaluate previous round
-        run: uv run python scripts/evaluate_round.py 2026
-
-      - name: Predict upcoming round
-        run: uv run python scripts/predict_upcoming.py 2026
+      - name: Train and register model
+        run: uv run python scripts/pipeline.py
