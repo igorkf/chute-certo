@@ -1,4 +1,4 @@
-"""Predict the next upcoming round and save results to SQLite."""
+"""Predict the next upcoming round and save results to Turso."""
 
 import os
 import sys
@@ -12,7 +12,7 @@ from loguru import logger
 from chute_certo.features.build import WINDOW, compute_current_form
 from chute_certo.ingestion.api_football import Settings, fetch_fixtures
 from chute_certo.ingestion.processing import load_seasons, parse_fixtures, parse_round
-from chute_certo.predictions.store import save_predictions
+from chute_certo.predictions.store import has_predictions_for_round, save_predictions
 
 HISTORICAL_SEASONS = [2023, 2024, 2025]
 
@@ -43,6 +43,11 @@ def predict_upcoming(current_season: int) -> None:
         by_round.setdefault(r, []).append(f)
     next_round = min(by_round)
     next_fixtures = by_round[next_round]
+
+    if has_predictions_for_round(current_season, next_round):
+        logger.info(f"Round {next_round} already predicted, skipping.")
+        return
+
     logger.info(f"Predicting round {next_round}: {len(next_fixtures)} matches")
 
     historical_df = load_seasons(HISTORICAL_SEASONS)

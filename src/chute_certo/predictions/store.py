@@ -76,6 +76,18 @@ def load_predictions() -> list[dict]:
     return [dict(zip(rs.columns, row, strict=True)) for row in rs.rows]
 
 
+def has_predictions_for_round(season: int, round_n: int) -> bool:
+    with _client() as client:
+        client.execute(_CREATE_TABLE)
+        rs = client.execute(
+            libsql_client.Statement(
+                "SELECT COUNT(*) FROM predictions WHERE season = ? AND round = ?",
+                [season, round_n],
+            )
+        )
+    return int(rs.rows[0][0]) > 0
+
+
 def update_actual_result(fixture_id: int, actual_result: str) -> None:
     with _client() as client:
         client.execute(
